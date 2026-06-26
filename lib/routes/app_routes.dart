@@ -1,0 +1,255 @@
+import 'package:flutter/material.dart';
+import 'package:smart_hospital/screens/Onboarding%202_screen.dart';
+import 'package:smart_hospital/screens/Onboarding%201_screen.dart';
+import 'package:smart_hospital/screens/add_medicine_screen.dart';
+import 'package:smart_hospital/screens/admin_dashboard_screen.dart';
+import 'package:smart_hospital/screens/appointment_booking_screen.dart';
+import 'package:smart_hospital/screens/appointment_confirmation_screen.dart';
+import 'package:smart_hospital/screens/appointment_history_screen.dart';
+import 'package:smart_hospital/screens/appointment_success_screen.dart';
+import 'package:smart_hospital/screens/date_selection_screen.dart';
+import 'package:smart_hospital/screens/doctor_detail_screen.dart';
+import 'package:smart_hospital/screens/doctor_list_screen.dart';
+import 'package:smart_hospital/screens/edit_medicine_screen.dart';
+import 'package:smart_hospital/screens/forgot_password_screen.dart';
+import 'package:smart_hospital/screens/home_dashboard_screen.dart';
+import 'package:smart_hospital/screens/live_queue_screen.dart';
+import 'package:smart_hospital/screens/login_screen.dart';
+import 'package:smart_hospital/screens/manage_doctor_screen.dart';
+import 'package:smart_hospital/screens/manage_queue_screen.dart';
+import 'package:smart_hospital/screens/medicine_reminder_screen.dart';
+import 'package:smart_hospital/screens/notification_screen.dart';
+import 'package:smart_hospital/screens/profile_screen.dart';
+import 'package:smart_hospital/screens/queue_history_screen.dart';
+import 'package:smart_hospital/screens/search_doctor_screen.dart';
+import 'package:smart_hospital/screens/setting_screen.dart';
+import 'package:smart_hospital/screens/signup_screen.dart';
+import 'package:smart_hospital/screens/splash_screen.dart';
+import 'package:smart_hospital/screens/time_slot_selection_screen.dart';
+import 'package:smart_hospital/screens/total_detailed_screen.dart';
+import '../models/appointment.dart';
+import '../models/doctor.dart';
+import '../models/medicine.dart';
+// Screen Imports (to be created next)
+
+class AppRoutes {
+  static const String splash = '/';
+  static const String onboarding1 = '/onboarding1';
+  static const String onboarding2 = '/onboarding2';
+  static const String login = '/login';
+  static const String signup = '/signup';
+  static const String forgotPassword = '/forgot-password';
+  static const String home = '/home';
+  static const String doctorList = '/doctor-list';
+  static const String doctorDetail = '/doctor-detail';
+  static const String searchDoctor = '/search-doctor';
+  static const String appointmentBooking = '/book-appointment';
+  static const String dateSelection = '/select-date';
+  static const String timeSlotSelection = '/select-time';
+  static const String appointmentConfirmation = '/confirm-appointment';
+  static const String appointmentSuccess = '/appointment-success';
+  static const String appointmentHistory = '/appointment-history';
+  static const String liveQueue = '/live-queue';
+  static const String tokenDetail = '/token-detail';
+  static const String queueHistory = '/queue-history';
+  static const String medicineReminder = '/medicine-reminder';
+  static const String addMedicine = '/add-medicine';
+  static const String editMedicine = '/edit-medicine';
+  static const String notifications = '/notifications';
+  static const String profile = '/profile';
+  static const String settings = '/settings';
+  static const String adminDashboard = '/admin-dashboard';
+  static const String manageDoctors = '/manage-doctors';
+  static const String manageQueue = '/manage-queue';
+  static Route<dynamic> generateRoute(RouteSettings settings) {
+    WidgetBuilder errorBuilder(String message) {
+      return (_) => Scaffold(
+        appBar: AppBar(title: const Text('Route Error')),
+        body: Center(
+          child: Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 16),
+          ),
+        ),
+      );
+    }
+
+    switch (settings.name) {
+      case splash:
+        return _fadeRoute(const SplashScreen());
+      case onboarding1:
+        return _slideRoute(const Onboarding1Screen(), AxisDirection.left);
+      case onboarding2:
+        return _slideRoute(const Onboarding2Screen(), AxisDirection.left);
+      case login:
+        return _fadeRoute(const LoginScreen());
+      case signup:
+        return _slideRoute(const SignUpScreen(), AxisDirection.up);
+      case forgotPassword:
+        return _slideRoute(const ForgotPasswordScreen(), AxisDirection.left);
+      case home:
+        return _fadeRoute(const HomeDashboardScreen());
+      case doctorList:
+        return _slideRoute(const DoctorListScreen(), AxisDirection.left);
+      case doctorDetail:
+        if (settings.arguments is Doctor) {
+          final doctor = settings.arguments as Doctor;
+          return _slideRoute(
+            DoctorDetailScreen(doctor: doctor),
+            AxisDirection.left,
+          );
+        }
+        return MaterialPageRoute(
+          builder: errorBuilder(
+            'Doctor details not provided for doctor detail screen.',
+          ),
+        );
+      case searchDoctor:
+        return _fadeRoute(const SearchDoctorScreen());
+      case appointmentBooking:
+        if (settings.arguments is Doctor) {
+          final doctor = settings.arguments as Doctor;
+          return _slideRoute(
+            AppointmentBookingScreen(doctor: doctor),
+            AxisDirection.up,
+          );
+        }
+        return MaterialPageRoute(
+          builder: errorBuilder(
+            'Doctor details not provided for appointment booking.',
+          ),
+        );
+      case dateSelection:
+        return _slideRoute(const DateSelectionScreen(), AxisDirection.left);
+      case timeSlotSelection:
+        return _slideRoute(const TimeSlotSelectionScreen(), AxisDirection.left);
+      case appointmentConfirmation:
+        return _slideRoute(
+          const AppointmentConfirmationScreen(),
+          AxisDirection.left,
+        );
+      case appointmentSuccess:
+        if (settings.arguments is Appointment) {
+          final apt = settings.arguments as Appointment;
+          return _fadeRoute(AppointmentSuccessScreen(appointment: apt));
+        }
+        return MaterialPageRoute(
+          builder: errorBuilder('Confirmed appointment data is missing.'),
+        );
+      case appointmentHistory:
+        return _slideRoute(
+          const AppointmentHistoryScreen(),
+          AxisDirection.left,
+        );
+      case liveQueue:
+        if (settings.arguments is String) {
+          final aptId = settings.arguments as String;
+          return _slideRoute(
+            LiveQueueScreen(appointmentId: aptId),
+            AxisDirection.left,
+          );
+        }
+        return MaterialPageRoute(
+          builder: errorBuilder(
+            'Appointment ID is missing for live queue tracking.',
+          ),
+        );
+      case tokenDetail:
+        if (settings.arguments is Appointment) {
+          final apt = settings.arguments as Appointment;
+          return _slideRoute(
+            TokenDetailScreen(appointment: apt),
+            AxisDirection.left,
+          );
+        }
+        return MaterialPageRoute(
+          builder: errorBuilder(
+            'Appointment details are missing for token detail screen.',
+          ),
+        );
+      case queueHistory:
+        return _slideRoute(const QueueHistoryScreen(), AxisDirection.left);
+      case medicineReminder:
+        return _slideRoute(const MedicineReminderScreen(), AxisDirection.left);
+      case addMedicine:
+        return _slideRoute(const AddMedicineScreen(), AxisDirection.up);
+      case editMedicine:
+        if (settings.arguments is Medicine) {
+          final medicine = settings.arguments as Medicine;
+          return _slideRoute(
+            EditMedicineScreen(medicine: medicine),
+            AxisDirection.up,
+          );
+        }
+        return MaterialPageRoute(
+          builder: errorBuilder(
+            'Medicine details are missing for edit screen.',
+          ),
+        );
+      case notifications:
+        return _slideRoute(const NotificationScreen(), AxisDirection.down);
+      case profile:
+        return _slideRoute(const ProfileScreen(), AxisDirection.right);
+      case AppRoutes.settings:
+        return _slideRoute(const SettingsScreen(), AxisDirection.left);
+      case adminDashboard:
+        return _fadeRoute(const AdminDashboardScreen());
+      case manageDoctors:
+        return _slideRoute(const ManageDoctorsScreen(), AxisDirection.left);
+      case manageQueue:
+        return _slideRoute(const ManageQueueScreen(), AxisDirection.left);
+      default:
+        return MaterialPageRoute(
+          builder: (_) => Scaffold(
+            body: Center(child: Text('No route defined for ${settings.name}')),
+          ),
+        );
+    }
+  }
+
+  // Premium Page Transition Animations
+  static PageRouteBuilder _fadeRoute(Widget child) {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => child,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(opacity: animation, child: child);
+      },
+      transitionDuration: const Duration(milliseconds: 300),
+    );
+  }
+
+  static PageRouteBuilder _slideRoute(Widget child, AxisDirection direction) {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => child,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        Offset begin;
+        switch (direction) {
+          case AxisDirection.left:
+            begin = const Offset(1.0, 0.0);
+            break;
+          case AxisDirection.right:
+            begin = const Offset(-1.0, 0.0);
+            break;
+          case AxisDirection.up:
+            begin = const Offset(0.0, 1.0);
+            break;
+          case AxisDirection.down:
+            begin = const Offset(0.0, -1.0);
+            break;
+        }
+
+        const end = Offset.zero;
+        const curve = Curves.easeInOutCubic;
+
+        var tween = Tween(
+          begin: begin,
+          end: end,
+        ).chain(CurveTween(curve: curve));
+
+        return SlideTransition(position: animation.drive(tween), child: child);
+      },
+      transitionDuration: const Duration(milliseconds: 400),
+    );
+  }
+}
