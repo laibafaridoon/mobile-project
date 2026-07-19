@@ -101,7 +101,7 @@ class AppRoutes {
       case onboarding1: return _slideRoute(const Onboarding1Screen(), AxisDirection.left);
       case onboarding2: return _slideRoute(const Onboarding2Screen(), AxisDirection.left);
       case login: return _fadeRoute(const LoginScreen());
-      case signup: return _slideRoute(const SignUpScreen(), AxisDirection.up);
+      case signup: return _slideRoute(const SignupScreen(), AxisDirection.up);
       case forgotPassword: return _slideRoute(const ForgotPasswordScreen(), AxisDirection.left);
       case home: return _fadeRoute(const HomeDashboardScreen());
       case doctorList: return _slideRoute(const DoctorListScreen(), AxisDirection.left);

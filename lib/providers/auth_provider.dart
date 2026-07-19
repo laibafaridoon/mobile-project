@@ -74,9 +74,14 @@ class AuthProvider with ChangeNotifier {
       );
       if (newUser != null) {
         _user = newUser;
-        _isAdmin = false;
-        _isDoctor = false; // Doctor will be marked true only after admin approval
+       _isAdmin = false;
+_isDoctor = role == 'doctor'; // Doctor will be marked true only after admin approval
         print('[AuthProvider] Registration successful for: ${newUser.email}');
+        if (role == 'doctor') {
+  print(
+    '[AuthProvider] Doctor account created and sent for admin approval.',
+  );
+}
         notifyListeners();
         return true;
       }

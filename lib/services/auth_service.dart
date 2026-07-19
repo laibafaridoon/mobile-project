@@ -176,13 +176,63 @@ class AuthService {
         // If role is doctor, create a pending request in 'doctor_requests' collection
         if (role == 'doctor' && doctorDetails != null) {
           final Map<String, dynamic> requestData = {
-            ...doctorDetails,
-            'status': 'pending',
-            'uid': user.uid,
-            'name': name,
-            'email': email,
-            'role': 'doctor',
-          };
+
+  'uid': user.uid,
+
+  'name': name,
+
+  'email': email,
+
+  'role': 'doctor',
+
+  'status': 'pending',
+
+  'qualification':
+      doctorDetails['qualification'],
+
+  'specialization':
+      doctorDetails['specialization'],
+
+  'experience':
+      doctorDetails['experience'],
+
+  'hospitalName':
+      doctorDetails['hospitalName'],
+
+  'consultationFee':
+      doctorDetails['consultationFee'],
+
+  'pmdcNumber':
+      doctorDetails['pmdcNumber'],
+
+  'availableDays':
+      doctorDetails['availableDays'],
+
+  'fromTime':
+      doctorDetails['fromTime'],
+
+  'toTime':
+      doctorDetails['toTime'],
+
+  'appointmentDuration':
+      doctorDetails['appointmentDuration'],
+
+  'maxPatientsPerDay':
+      doctorDetails['maxPatientsPerDay'],
+
+  'acceptsEmergency':
+      doctorDetails['acceptsEmergency'],
+
+  'rating': 0,
+
+  'reviewsCount': 0,
+
+  'isApproved': false,
+
+  'createdAt':
+      DateTime.now().toIso8601String(),
+
+};
 
           await FirebaseService.setDocument(
             collection: 'doctor_requests',
@@ -259,6 +309,7 @@ class AuthService {
       final data = reqDoc.data() as Map<String, dynamic>;
       // Mark as approved and preserve fields
       data['status'] = 'approved';
+      data['isApproved'] = true;
       // Ensure required fields exist
       data['id'] = uid;
       await FirebaseService.setDocument(
@@ -266,6 +317,13 @@ class AuthService {
         docId: uid,
         data: data,
       );
+      await FirebaseService.updateDocument(
+  collection: 'users',
+  docId: uid,
+  data: {
+    'role': 'doctor',
+  },
+);
       // Delete the request document
       await FirebaseService.deleteDocument(
         collection: 'doctor_requests',
