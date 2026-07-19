@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../routes/app_routes.dart';
 // Agar aapka AuthProvider kisi aur folder mein hai to us ka path check kar lijiye ga
 // import '../../providers/auth_provider.dart';

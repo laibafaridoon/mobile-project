@@ -26,17 +26,8 @@ class AppointmentConfirmationScreen extends StatelessWidget {
     final fee = doctor.consultationFee;
     const serviceFee = 5.0; // dummy service charge
     final total = fee + serviceFee;
-    Future<void> handleConfirm() async {
-      final appointment = await aptProvider.confirmAppointment();
-      if (context.mounted && appointment != null) {
-        // Go to success screen and clear previous booking stack
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          AppRoutes.appointmentSuccess,
-          ModalRoute.withName(AppRoutes.home),
-          arguments: appointment,
-        );
-      }
+    void handleConfirm() {
+      Navigator.pushNamed(context, AppRoutes.payment);
     }
 
     return Scaffold(
@@ -55,15 +46,15 @@ class AppointmentConfirmationScreen extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.network(
-                            doctor.imageUrl,
-                            width: 60,
-                            height: 60,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
+                        Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.person, size: 48, color: AppColors.textSecondary),
+                    ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: Column(
@@ -163,17 +154,8 @@ class AppointmentConfirmationScreen extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: ElevatedButton(
-            onPressed: aptProvider.isLoading ? null : handleConfirm,
-            child: aptProvider.isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : const Text('Confirm & Book'),
+            onPressed: handleConfirm,
+            child: const Text('Proceed to Payment'),
           ),
         ),
       ),

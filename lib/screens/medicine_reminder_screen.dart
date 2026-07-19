@@ -10,7 +10,6 @@ class MedicineReminderScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<MedicineProvider>(context);
-    final size = MediaQuery.of(context).size;
     return Scaffold(
       appBar: AppBar(title: const Text('Medicine Reminders')),
       body: SingleChildScrollView(
@@ -164,11 +163,11 @@ class MedicineReminderScreen extends StatelessWidget {
 
   Widget _buildMedicinesList(
     BuildContext context,
-    List<Medicine> list,
+    List<Medicine>? list,
     String slot,
     MedicineProvider provider,
   ) {
-    if (list.isEmpty) {
+    if (list == null || list.isEmpty) {
       return const Padding(
         padding: EdgeInsets.only(top: 8.0, left: 26.0),
         child: Text(

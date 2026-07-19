@@ -81,7 +81,7 @@ class _ManageQueueScreenState extends State<ManageQueueScreen> {
                           setState(() {
                             _selectedDoctor = val;
                             if (val != null) {
-                              _roomController.text = stats['roomNumber'];
+                              _roomController.text = stats['roomNumber'].toString();
                             }
                           });
                         },

@@ -5,14 +5,48 @@ import '../../providers/auth_provider.dart';
 import '../../providers/doctor_provider.dart';
 import '../../providers/appointment_provider.dart';
 import '../../routes/app_routes.dart';
+import '../../services/firebase_service.dart';
 
-class AdminDashboardScreen extends StatelessWidget {
+class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
+
+  @override
+  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+}
+
+class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  int _totalPatients = 0;
+  bool _loadingPatients = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPatientsCount();
+  }
+
+  Future<void> _fetchPatientsCount() async {
+    try {
+      final snap = await FirebaseService.getCollection(collection: 'users');
+      final users = snap.docs.map((doc) => doc.data() as Map<String, dynamic>);
+      final count = users
+          .where((u) => (u['role'] ?? 'patient') == 'patient')
+          .length;
+      setState(() {
+        _totalPatients = count;
+        _loadingPatients = false;
+      });
+    } catch (e) {
+      print('[AdminDashboardScreen] Error fetching patients count: $e');
+      setState(() => _loadingPatients = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final docProvider = Provider.of<DoctorProvider>(context);
     final aptProvider = Provider.of<AppointmentProvider>(context);
+
     final totalDoctors = docProvider.doctors.length;
     final totalBookings = aptProvider.appointments.length;
     final activeQueuesCount = docProvider.doctors.where((doc) {
@@ -22,6 +56,7 @@ class AdminDashboardScreen extends StatelessWidget {
       ).activeAppointments.where((apt) => apt.doctorId == doc.id).toList();
       return stats.isNotEmpty;
     }).length;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Admin Console'),
@@ -39,104 +74,144 @@ class AdminDashboardScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header Intro
-            const Text(
-              'Hospital Overview',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await _fetchPatientsCount();
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header Intro
+              const Text(
+                'Hospital Overview',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Real-time stats and management controls',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-            ),
-            const SizedBox(height: 24),
-            // Analytics Cards Grid
-            Row(
-              children: [
-                Expanded(
-                  child: _buildAnalyticCard(
-                    context,
-                    title: 'Total Doctors',
-                    value: '$totalDoctors',
-                    icon: Icons.people_alt_rounded,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildAnalyticCard(
-                    context,
-                    title: 'Total Bookings',
-                    value: '$totalBookings',
-                    icon: Icons.calendar_month_rounded,
-                    color: AppColors.accent,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildAnalyticCard(
-                    context,
-                    title: 'Active Queues',
-                    value: '$activeQueuesCount',
-                    icon: Icons.rocket_launch_rounded,
-                    color: Colors.amber.shade800,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildAnalyticCard(
-                    context,
-                    title: 'Revenue Today',
-                    value: '\$${(totalBookings * 100).toStringAsFixed(0)}',
-                    icon: Icons.monetization_on_rounded,
-                    color: Colors.green.shade700,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 32),
-            // Quick Actions Cards list
-            const Text(
-              'Administration Tasks',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+              const SizedBox(height: 4),
+              const Text(
+                'Real-time stats and management controls',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
               ),
-            ),
-            const SizedBox(height: 12),
+              const SizedBox(height: 24),
 
-            _buildAdminActionTile(
-              context,
-              title: 'Manage Doctors database',
-              subtitle: 'Add, update, or remove doctor profiles',
-              icon: Icons.medical_services_outlined,
-              color: AppColors.primary,
-              route: AppRoutes.manageDoctors,
-            ),
-            const SizedBox(height: 12),
-            _buildAdminActionTile(
-              context,
-              title: 'Manage Queue Progress',
-              subtitle: 'Update room numbers and call next token',
-              icon: Icons.queue_play_next_rounded,
-              color: AppColors.accent,
-              route: AppRoutes.manageQueue,
-            ),
-          ],
+              // Analytics Cards Grid
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildAnalyticCard(
+                      context,
+                      title: 'Total Doctors',
+                      value: '$totalDoctors',
+                      icon: Icons.people_alt_rounded,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildAnalyticCard(
+                      context,
+                      title: 'Total Patients',
+                      value: _loadingPatients ? '...' : '$_totalPatients',
+                      icon: Icons.personal_injury_rounded,
+                      color: Colors.teal.shade700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildAnalyticCard(
+                      context,
+                      title: 'Total Bookings',
+                      value: '$totalBookings',
+                      icon: Icons.calendar_month_rounded,
+                      color: AppColors.accent,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildAnalyticCard(
+                      context,
+                      title: 'Active Queues',
+                      value: '$activeQueuesCount',
+                      icon: Icons.rocket_launch_rounded,
+                      color: Colors.amber.shade800,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildAnalyticCard(
+                      context,
+                      title: 'Revenue Today',
+                      value: '\$${(totalBookings * 100).toStringAsFixed(0)}',
+                      icon: Icons.monetization_on_rounded,
+                      color: Colors.green.shade700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+
+              // Quick Actions Cards list
+              const Text(
+                'Administration Tasks',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              _buildAdminActionTile(
+                context,
+                title: 'Manage Doctors database',
+                subtitle: 'Add, update, or remove doctor profiles',
+                icon: Icons.medical_services_outlined,
+                color: AppColors.primary,
+                route: AppRoutes.manageDoctors,
+              ),
+              const SizedBox(height: 12),
+              _buildAdminActionTile(
+                context,
+                title: 'Manage Doctor Requests',
+                subtitle: 'Approve or reject pending doctor sign‑ups',
+                icon: Icons.person_add_alt_1_rounded,
+                color: Colors.green.shade700,
+                route: AppRoutes.manageDoctorRequests,
+              ),
+              const SizedBox(height: 12),
+              _buildAdminActionTile(
+                context,
+                title: 'Manage Patients database',
+                subtitle: 'View, search, edit, or delete patient files',
+                icon: Icons.person_search_outlined,
+                color: Colors.teal.shade700,
+                route: AppRoutes.managePatients,
+              ),
+              const SizedBox(height: 12),
+              _buildAdminActionTile(
+                context,
+                title: 'Manage Queue Progress',
+                subtitle: 'Update room numbers and call next token',
+                icon: Icons.queue_play_next_rounded,
+                color: AppColors.accent,
+                route: AppRoutes.manageQueue,
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -272,10 +272,10 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen>
 
   Widget _buildAppointmentsTab(
     BuildContext context,
-    List<Appointment> list, {
+    List<Appointment>? list, {
     required bool isActive,
   }) {
-    if (list.isEmpty) {
+    if (list == null || list.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -527,4 +527,8 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen>
       },
     );
   }
+}
+
+extension on AppointmentProvider {
+  void rescheduleAppointment(String id, DateTime dateTime, String s) {}
 }

@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Medicine {
   final String id;
   final String name;
@@ -8,8 +10,10 @@ class Medicine {
   final bool night;
   final bool beforeFood; // true = before food, false = after food
   final String notes;
-  final Map<String, bool>
-  takenToday; // e.g., {'morning': false, 'afternoon': false, 'evening': false, 'night': false}
+  final DateTime startDate;
+  final DateTime endDate;
+  final Map<String, bool> takenToday;
+
   Medicine({
     required this.id,
     required this.name,
@@ -19,6 +23,8 @@ class Medicine {
     required this.evening,
     required this.night,
     required this.beforeFood,
+    required this.startDate,
+    required this.endDate,
     this.notes = '',
     Map<String, bool>? takenToday,
   }) : takenToday =
@@ -29,6 +35,9 @@ class Medicine {
              if (evening) 'evening': false,
              if (night) 'night': false,
            };
+
+  bool get isTaken => takenToday.values.any((value) => value == true);
+
   Medicine copyWith({
     String? id,
     String? name,
@@ -39,23 +48,49 @@ class Medicine {
     bool? night,
     bool? beforeFood,
     String? notes,
+    DateTime? startDate,
+    DateTime? endDate,
     Map<String, bool>? takenToday,
+    bool? isTaken,
   }) {
+    final updatedMorning = morning ?? this.morning;
+    final updatedAfternoon = afternoon ?? this.afternoon;
+    final updatedEvening = evening ?? this.evening;
+    final updatedNight = night ?? this.night;
+
+    final updatedTakenToday = takenToday ??
+        (isTaken != null
+            ? {
+                if (updatedMorning) 'morning': isTaken,
+                if (updatedAfternoon) 'afternoon': isTaken,
+                if (updatedEvening) 'evening': isTaken,
+                if (updatedNight) 'night': isTaken,
+              }
+            : this.takenToday);
+
     return Medicine(
       id: id ?? this.id,
       name: name ?? this.name,
       dosage: dosage ?? this.dosage,
-      morning: morning ?? this.morning,
-      afternoon: afternoon ?? this.afternoon,
-      evening: evening ?? this.evening,
-      night: night ?? this.night,
+      morning: updatedMorning,
+      afternoon: updatedAfternoon,
+      evening: updatedEvening,
+      night: updatedNight,
       beforeFood: beforeFood ?? this.beforeFood,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
       notes: notes ?? this.notes,
-      takenToday: takenToday ?? this.takenToday,
+      takenToday: updatedTakenToday,
     );
   }
 
   factory Medicine.fromMap(Map<String, dynamic> map, String docId) {
+    DateTime parseDate(dynamic value) {
+      if (value is Timestamp) return value.toDate();
+      if (value is DateTime) return value;
+      return DateTime.now();
+    }
+
     return Medicine(
       id: docId,
       name: map['name'] ?? '',
@@ -65,10 +100,13 @@ class Medicine {
       evening: map['evening'] ?? false,
       night: map['night'] ?? false,
       beforeFood: map['beforeFood'] ?? false,
+      startDate: parseDate(map['startDate']),
+      endDate: parseDate(map['endDate']),
       notes: map['notes'] ?? '',
       takenToday: Map<String, bool>.from(map['takenToday'] ?? {}),
     );
   }
+
   Map<String, dynamic> toMap() {
     return {
       'name': name,
@@ -79,6 +117,8 @@ class Medicine {
       'night': night,
       'beforeFood': beforeFood,
       'notes': notes,
+      'startDate': startDate,
+      'endDate': endDate,
       'takenToday': takenToday,
     };
   }

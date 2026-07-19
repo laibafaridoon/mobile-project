@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:smart_hospital/providers/auth_provider.dart';
+import 'package:smart_hospital/screens/doctor_profile_screen.dart';
 import 'package:smart_hospital/screens/Onboarding%202_screen.dart';
 import 'package:smart_hospital/screens/Onboarding%201_screen.dart';
 import 'package:smart_hospital/screens/add_medicine_screen.dart';
@@ -8,6 +11,10 @@ import 'package:smart_hospital/screens/appointment_confirmation_screen.dart';
 import 'package:smart_hospital/screens/appointment_history_screen.dart';
 import 'package:smart_hospital/screens/appointment_success_screen.dart';
 import 'package:smart_hospital/screens/date_selection_screen.dart';
+import 'package:smart_hospital/screens/doctor_dashboard_screen.dart';
+import 'package:smart_hospital/screens/manage_doctor_screen.dart';
+import 'package:smart_hospital/screens/admin/manage_patients_screen.dart';
+import 'package:smart_hospital/screens/admin/manage_doctor_requests_screen.dart';
 import 'package:smart_hospital/screens/doctor_detail_screen.dart';
 import 'package:smart_hospital/screens/doctor_list_screen.dart';
 import 'package:smart_hospital/screens/edit_medicine_screen.dart';
@@ -15,7 +22,6 @@ import 'package:smart_hospital/screens/forgot_password_screen.dart';
 import 'package:smart_hospital/screens/home_dashboard_screen.dart';
 import 'package:smart_hospital/screens/live_queue_screen.dart';
 import 'package:smart_hospital/screens/login_screen.dart';
-import 'package:smart_hospital/screens/manage_doctor_screen.dart';
 import 'package:smart_hospital/screens/manage_queue_screen.dart';
 import 'package:smart_hospital/screens/medicine_reminder_screen.dart';
 import 'package:smart_hospital/screens/notification_screen.dart';
@@ -27,10 +33,14 @@ import 'package:smart_hospital/screens/signup_screen.dart';
 import 'package:smart_hospital/screens/splash_screen.dart';
 import 'package:smart_hospital/screens/time_slot_selection_screen.dart';
 import 'package:smart_hospital/screens/total_detailed_screen.dart';
+import 'package:smart_hospital/screens/await_approval_screen.dart';
 import '../models/appointment.dart';
 import '../models/doctor.dart';
 import '../models/medicine.dart';
-// Screen Imports (to be created next)
+// Payment screen imports
+import 'package:smart_hospital/screens/payment/payment_screen.dart';
+import 'package:smart_hospital/screens/payment/payment_success.dart';
+import 'package:smart_hospital/screens/payment/payment_failed.dart';
 
 class AppRoutes {
   static const String splash = '/';
@@ -58,9 +68,20 @@ class AppRoutes {
   static const String notifications = '/notifications';
   static const String profile = '/profile';
   static const String settings = '/settings';
-  static const String adminDashboard = '/admin-dashboard';
+  static const String awaitApproval = '/await-approval';
+  static const String manageDoctorRequests = '/manage-doctor-requests';
   static const String manageDoctors = '/manage-doctors';
   static const String manageQueue = '/manage-queue';
+  static const String doctorDashboard = '/doctor-dashboard';
+  static const String doctorProfile = '/doctor-profile';
+  static const String adminDashboard = '/admin-dashboard';
+  static const String managePatients = '/manage-patients';
+
+  // Payment Module Routes
+  static const String payment = '/payment';
+  static const String paymentSuccess = '/payment-success';
+  static const String paymentFailed = '/payment-failed';
+
   static Route<dynamic> generateRoute(RouteSettings settings) {
     WidgetBuilder errorBuilder(String message) {
       return (_) => Scaffold(
@@ -137,6 +158,22 @@ class AppRoutes {
         return MaterialPageRoute(
           builder: errorBuilder('Confirmed appointment data is missing.'),
         );
+      case payment:
+        return _slideRoute(const PaymentScreen(), AxisDirection.left);
+      case paymentSuccess:
+        if (settings.arguments is Appointment) {
+          final apt = settings.arguments as Appointment;
+          return _fadeRoute(PaymentSuccessScreen(appointment: apt));
+        }
+        return MaterialPageRoute(
+          builder: errorBuilder('Payment details are missing for success screen.'),
+        );
+      case paymentFailed:
+        final errorMsg = settings.arguments as String?;
+        return _slideRoute(
+          PaymentFailedScreen(errorMessage: errorMsg),
+          AxisDirection.left,
+        );
       case appointmentHistory:
         return _slideRoute(
           const AppointmentHistoryScreen(),
@@ -190,15 +227,36 @@ class AppRoutes {
       case notifications:
         return _slideRoute(const NotificationScreen(), AxisDirection.down);
       case profile:
-        return _slideRoute(const ProfileScreen(), AxisDirection.right);
+        return _slideRoute(
+          Builder(
+            builder: (context) {
+              final authProvider = Provider.of<AuthProvider>(context, listen: false);
+              if (authProvider.isDoctor || authProvider.user?.role == 'doctor') {
+                return const DoctorProfileScreen();
+              }
+              return const ProfileScreen();
+            },
+          ),
+          AxisDirection.right,
+        );
       case AppRoutes.settings:
         return _slideRoute(const SettingsScreen(), AxisDirection.left);
-      case adminDashboard:
-        return _fadeRoute(const AdminDashboardScreen());
+      case manageDoctorRequests:
+        return _slideRoute(const ManageDoctorRequestsScreen(), AxisDirection.left);
       case manageDoctors:
         return _slideRoute(const ManageDoctorsScreen(), AxisDirection.left);
       case manageQueue:
         return _slideRoute(const ManageQueueScreen(), AxisDirection.left);
+      case doctorDashboard:
+        return _fadeRoute(const DoctorDashboardScreen());
+      case awaitApproval:
+        return _fadeRoute(const AwaitApprovalScreen());
+      case doctorProfile:
+        return _fadeRoute(const DoctorProfileScreen());
+      case adminDashboard:
+        return _fadeRoute(const AdminDashboardScreen());
+      case managePatients:
+        return _slideRoute(const ManagePatientsScreen(), AxisDirection.left);
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

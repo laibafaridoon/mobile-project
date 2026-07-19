@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "184366190632",
+    "project_id": "smart-707fa",
+    "storage_bucket": "smart-707fa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:184366190632:android:116e03f01824db99ff651d",
+        "android_client_info": {
+          "package_name": "com.example.smart_hospital"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBBnNWAr9NpDq0_D8qr5F3is6oZSXbvr1A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

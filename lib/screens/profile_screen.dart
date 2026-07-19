@@ -21,10 +21,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late TextEditingController _contactController;
   late TextEditingController _addressController;
 
-  // Nayi images handle karne ke liye variables
+  // Nayi images handle karne ka variable
   final ImagePicker _picker = ImagePicker();
   Uint8List? _webImageBytes; // Web par foran preview dikhane ke liye
-  XFile? _pickedImageFile; // Backend par bhejney ke liye file data
 
   @override
   void initState() {
@@ -59,7 +58,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         // Web aur mobile dono par smoothly chalane ke liye bytes read karte hain
         final bytes = await pickedFile.readAsBytes();
         setState(() {
-          _pickedImageFile = pickedFile;
           _webImageBytes = bytes;
         });
       }
@@ -68,32 +66,75 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void _save(AuthProvider auth) {
+  void _save(AuthProvider auth) async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Show loading
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Saving profile...'),
+        backgroundColor: AppColors.primary,
+      ),
+    );
+
+    String? newImageUrl = auth.user?.profilePictureUrl;
+
+    // Upload image if picked
+    if (_webImageBytes != null && _webImageBytes!.isNotEmpty) {
+      final uploadedUrl = await auth.authService.uploadProfilePicture(
+        auth.user!.uid,
+        _webImageBytes!,
+      );
+
+      if (uploadedUrl == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profile picture upload failed. Please try again.'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+        return;
+      }
+      newImageUrl = uploadedUrl;
+    }
 
     final updated = auth.user!.copyWith(
       name: _nameController.text.trim(),
       age: int.tryParse(_ageController.text.trim()) ?? auth.user!.age,
       emergencyContact: _contactController.text.trim(),
       address: _addressController.text.trim(),
-      // NOTE: Agar aapka user model custom image file ya local path/bytes support karta hai,
-      // toh aap usey yahan update kar sakti hain. Filhal yeh network URL hi rakh raha hai jab tak API set na ho.
+      profilePictureUrl: newImageUrl,
     );
 
-    auth.updateProfile(updated);
+    await auth.updateProfile(updated);
 
-    // TODO: Agar backend ya Firebase chal raha hai, toh `_pickedImageFile` ko server par upload karein.
+    if (auth.errorMessage != null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(auth.errorMessage!),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+      return;
+    }
 
     setState(() {
       _isEditing = false;
+      _webImageBytes = null;
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Profile updated successfully'),
-        backgroundColor: AppColors.success,
-      ),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile updated successfully'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    }
   }
 
   @override
@@ -118,7 +159,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _contactController.text = profile.emergencyContact;
                   _addressController.text = profile.address;
                   _webImageBytes = null; // Selection cancel karein
-                  _pickedImageFile = null;
                 }
                 _isEditing = !_isEditing;
               });
@@ -146,11 +186,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         CircleAvatar(
                           radius: 60,
                           backgroundColor: Colors.grey.shade200,
-                          // Agar user ne nayi image select ki hai toh wo dikhaye, warna purani network image
                           backgroundImage: _webImageBytes != null
                               ? MemoryImage(_webImageBytes!)
-                              : NetworkImage(profile.profilePictureUrl)
-                                    as ImageProvider,
+                              : (profile.profilePictureUrl.isNotEmpty
+                                        ? NetworkImage(
+                                            profile.profilePictureUrl,
+                                          )
+                                        : null)
+                                    as ImageProvider<Object>?,
+                          child:
+                              _webImageBytes == null &&
+                                  profile.profilePictureUrl.isEmpty
+                              ? Icon(
+                                  Icons.person,
+                                  color: AppColors.primary,
+                                  size: 40,
+                                )
+                              : null,
                         ),
                         if (_isEditing)
                           Positioned(

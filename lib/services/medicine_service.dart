@@ -1,59 +1,312 @@
+import 'package:uuid/uuid.dart';
 import '../models/medicine.dart';
+import 'firebase_service.dart';
 import 'notification_service.dart';
 
 class MedicineService {
-  static final List<Medicine> _medicines = [
-    Medicine(
-      id: 'med_1',
-      name: 'Paracetamol',
-      dosage: '500mg (1 Tablet)',
-      morning: true,
-      afternoon: false,
-      evening: true,
-      night: false,
-      beforeFood: false,
-      notes: 'Take after lunch/dinner for fever/pain relief.',
-      takenToday: {'morning': true, 'evening': false},
-    ),
-    Medicine(
-      id: 'med_2',
-      name: 'Salbutamol Inhaler',
-      dosage: '100mcg (2 Puffs)',
-      morning: true,
-      afternoon: true,
-      evening: true,
-      night: true,
-      beforeFood: true,
-      notes: 'Use daily before meals. Keep inhaler clean.',
-      takenToday: {
-        'morning': true,
-        'afternoon': false,
-        'evening': false,
-        'night': false,
-      },
-    ),
-    Medicine(
-      id: 'med_3',
-      name: 'Atorvastatin',
-      dosage: '20mg (1 Tablet)',
-      morning: false,
-      afternoon: false,
-      evening: false,
-      night: true,
-      beforeFood: false,
-      notes: 'Take before bedtime.',
-      takenToday: {'night': false},
-    ),
-  ];
-  Future<List<Medicine>> getMedicines() async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    return List.from(_medicines);
+  static const uuid = Uuid();
+
+  // Add medicine for user
+  static Future<Medicine?> addMedicine({
+    required String userId,
+    required String name,
+    required String dosage,
+    required bool morning,
+    required bool afternoon,
+    required bool evening,
+    required bool night,
+    required bool beforeFood,
+    required String notes,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    try {
+      final medicineId = uuid.v4();
+      final medicine = Medicine(
+        id: medicineId,
+        name: name,
+        dosage: dosage,
+        morning: morning,
+        afternoon: afternoon,
+        evening: evening,
+        night: night,
+        beforeFood: beforeFood,
+        notes: notes,
+        startDate: startDate,
+        endDate: endDate,
+      );
+
+      await FirebaseService.setDocument(
+        collection: 'medicines',
+        docId: medicineId,
+        data: {
+          'userId': userId,
+          ...medicine.toMap(),
+          'createdAt': DateTime.now(),
+        },
+      );
+
+      await NotificationService.addNotification(
+        title: 'Medicine Added',
+        body: 'Reminder set for $name ($dosage)',
+        type: 'medicine',
+        userId: userId,
+      );
+
+      return medicine;
+    } catch (e) {
+      print('[MedicineService] Add Error: $e');
+      return null;
+    }
   }
 
-  Future<Medicine> addMedicine(Medicine medicine) async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    final newMedicine = Medicine(
-      id: 'med_${DateTime.now().millisecondsSinceEpoch}',
+  // Get user's medicines
+  static Future<List<Medicine>> getUserMedicines(String userId) async {
+    try {
+      final query = await FirebaseService.queryCollection(
+        collection: 'medicines',
+        field: 'userId',
+        value: userId,
+      );
+
+      return query.docs
+          .map(
+            (doc) =>
+                Medicine.fromMap(doc.data() as Map<String, dynamic>, doc.id),
+          )
+          .toList();
+    } catch (e) {
+      print('[MedicineService] Get Medicines Error: $e');
+      return [];
+    }
+  }
+
+  // Update medicine
+  static Future<bool> updateMedicine({
+    required String medicineId,
+    required String name,
+    required String dosage,
+    required bool morning,
+    required bool afternoon,
+    required bool evening,
+    required bool night,
+    required bool beforeFood,
+    required String notes,
+    required DateTime startDate,
+    required DateTime endDate,
+    Map<String, bool>? takenToday,
+  }) async {
+    try {
+      final data = {
+        'name': name,
+        'dosage': dosage,
+        'morning': morning,
+        'afternoon': afternoon,
+        'evening': evening,
+        'night': night,
+        'beforeFood': beforeFood,
+        'notes': notes,
+        'startDate': startDate,
+        'endDate': endDate,
+      };
+      if (takenToday != null) {
+        data['takenToday'] = takenToday;
+      }
+
+      await FirebaseService.updateDocument(
+        collection: 'medicines',
+        docId: medicineId,
+        data: data,
+      );
+      return true;
+    } catch (e) {
+      print('[MedicineService] Update Error: $e');
+      return false;
+    }
+  }
+
+  // Delete medicine
+  static Future<bool> deleteMedicine(String medicineId) async {
+    try {
+      await FirebaseService.deleteDocument(
+        collection: 'medicines',
+        docId: medicineId,
+      );
+      return true;
+    } catch (e) {
+      print('[MedicineService] Delete Error: $e');
+      return false;
+    }
+  }
+
+  // Mark medicine as taken
+  static Future<bool> markMedicineAsTaken({
+    required String userId,
+    required String medicineId,
+    required String medicineName,
+    required String timeSlot,
+  }) async {
+    try {
+      // Create a record in medicine_intake collection
+      await FirebaseService.addDocument(
+        collection: 'medicine_intake',
+        data: {
+          'userId': userId,
+          'medicineId': medicineId,
+          'medicineName': medicineName,
+          'timeSlot': timeSlot,
+          'date': DateTime.now(),
+          'takenAt': DateTime.now(),
+        },
+      );
+
+      await NotificationService.addNotification(
+        title: 'Medication Tracked',
+        body: 'You took $medicineName at $timeSlot',
+        type: 'medicine',
+        userId: userId,
+      );
+
+      return true;
+    } catch (e) {
+      print('[MedicineService] Mark Taken Error: $e');
+      return false;
+    }
+  }
+
+  // Get medicine intake history
+  static Future<List<Map<String, dynamic>>> getMedicineHistory({
+    required String userId,
+    DateTime? from,
+    DateTime? to,
+  }) async {
+    try {
+      var query = FirebaseService.firestore
+          .collection('medicine_intake')
+          .where('userId', isEqualTo: userId);
+
+      if (from != null) {
+        query = query.where('date', isGreaterThanOrEqualTo: from);
+      }
+      if (to != null) {
+        query = query.where('date', isLessThanOrEqualTo: to);
+      }
+
+      final result = await query.orderBy('date', descending: true).get();
+      return result.docs.map((doc) => doc.data()).toList();
+    } catch (e) {
+      print('[MedicineService] Get History Error: $e');
+      return [];
+    }
+  }
+
+  // Get today's medicines
+  static Future<List<Medicine>> getTodaysMedicines(String userId) async {
+    try {
+      return await getUserMedicines(userId);
+    } catch (e) {
+      print('[MedicineService] Get Today Medicines Error: $e');
+      return [];
+    }
+  }
+
+  // Listen to medicines in real-time
+  static Stream<List<Medicine>> listenToUserMedicines(String userId) {
+    return FirebaseService.listenToQuery(
+      collection: 'medicines',
+      field: 'userId',
+      value: userId,
+    ).map((snapshot) {
+      return snapshot.docs
+          .map(
+            (doc) =>
+                Medicine.fromMap(doc.data() as Map<String, dynamic>, doc.id),
+          )
+          .toList();
+    });
+  }
+
+  // Send medicine reminder
+  static Future<void> sendMedicineReminder({
+    required String userId,
+    required String medicineName,
+    required String dosage,
+    required String timeSlot,
+    required bool beforeFood,
+  }) async {
+    try {
+      final foodTiming = beforeFood ? 'before food' : 'after food';
+      await NotificationService.sendMedicineReminder(
+        userId: userId,
+        medicineName: medicineName,
+        dosage: dosage,
+        time: '$timeSlot ($foodTiming)',
+      );
+    } catch (e) {
+      print('[MedicineService] Send Reminder Error: $e');
+    }
+  }
+
+  static Future<bool> updateMedicineTakenToday(
+    String medicineId,
+    Map<String, bool> takenToday,
+  ) async {
+    try {
+      await FirebaseService.updateDocument(
+        collection: 'medicines',
+        docId: medicineId,
+        data: {'takenToday': takenToday},
+      );
+      return true;
+    } catch (e) {
+      print('[MedicineService] Update TakenToday Error: $e');
+      return false;
+    }
+  }
+
+  // Get medicine compliance stats
+  static Future<Map<String, dynamic>> getMedicineCompliance(
+    String userId,
+  ) async {
+    try {
+      final medicines = await getUserMedicines(userId);
+      final history = await getMedicineHistory(
+        userId: userId,
+        from: DateTime.now().subtract(const Duration(days: 7)),
+      );
+
+      int totalExpected = 0;
+      for (var med in medicines) {
+        if (med.morning) totalExpected++;
+        if (med.afternoon) totalExpected++;
+        if (med.evening) totalExpected++;
+        if (med.night) totalExpected++;
+      }
+
+      totalExpected *= 7; // 7 days
+
+      return {
+        'totalMedicines': medicines.length,
+        'totalExpectedDoses': totalExpected,
+        'totalDosesTaken': history.length,
+        'compliancePercentage': totalExpected > 0
+            ? ((history.length / totalExpected) * 100).toStringAsFixed(1)
+            : '0',
+      };
+    } catch (e) {
+      print('[MedicineService] Compliance Stats Error: $e');
+      return {
+        'totalMedicines': 0,
+        'totalExpectedDoses': 0,
+        'totalDosesTaken': 0,
+        'compliancePercentage': '0',
+      };
+    }
+  }
+
+  Future<bool> editMedicine(Medicine medicine) async {
+    return await updateMedicine(
+      medicineId: medicine.id,
       name: medicine.name,
       dosage: medicine.dosage,
       morning: medicine.morning,
@@ -62,63 +315,13 @@ class MedicineService {
       night: medicine.night,
       beforeFood: medicine.beforeFood,
       notes: medicine.notes,
+      startDate: medicine.startDate,
+      endDate: medicine.endDate,
+      takenToday: medicine.takenToday,
     );
-    _medicines.add(newMedicine);
-    NotificationService.addNotification(
-      title: 'New Medicine Reminder Added',
-      body: 'Reminder set for ${medicine.name} (${medicine.dosage}).',
-      type: 'medicine',
-    );
-    return newMedicine;
   }
 
-  Future<Medicine> editMedicine(Medicine medicine) async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    final index = _medicines.indexWhere((m) => m.id == medicine.id);
-    if (index != -1) {
-      _medicines[index] = medicine;
-    }
-    return medicine;
-  }
-
-  Future<void> deleteMedicine(String id) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    _medicines.removeWhere((m) => m.id == id);
-  }
-
-  Future<Medicine> toggleMedicationTaken(
-    String id,
-    String slot,
-    bool isTaken,
-  ) async {
-    final index = _medicines.indexWhere((m) => m.id == id);
-    if (index == -1) throw Exception("Medicine not found");
-    final existing = _medicines[index];
-    final updatedTaken = Map<String, bool>.from(existing.takenToday);
-    updatedTaken[slot] = isTaken;
-    final updated = existing.copyWith(takenToday: updatedTaken);
-    _medicines[index] = updated;
-    if (isTaken) {
-      // Trigger a silent simulator reminder/completion message
-      NotificationService.addNotification(
-        title: 'Medication Tracked',
-        body: 'You marked ${existing.name} ($slot dosage) as taken.',
-        type: 'medicine',
-      );
-    }
-    return updated;
-  }
-
-  // Resets taken statuses for a new day
-  static void resetDailyTracker() {
-    for (int i = 0; i < _medicines.length; i++) {
-      final med = _medicines[i];
-      final resetTaken = <String, bool>{};
-      if (med.morning) resetTaken['morning'] = false;
-      if (med.afternoon) resetTaken['afternoon'] = false;
-      if (med.evening) resetTaken['evening'] = false;
-      if (med.night) resetTaken['night'] = false;
-      _medicines[i] = med.copyWith(takenToday: resetTaken);
-    }
+  Future<bool> markAsTaken(String medicineId) async {
+    return false;
   }
 }

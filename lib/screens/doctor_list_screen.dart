@@ -115,45 +115,20 @@ class DoctorListScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Doctor Image Section (With Safe Error Handling)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      width: 80,
-                      height: 80,
-                      color: Colors.grey[100],
-                      child: Image.network(
-                        doc.imageUrl,
+                    // Dummy doctor avatar
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
                         width: 80,
                         height: 80,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Center(
-                            child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                        loadingProgress.expectedTotalBytes!
-                                  : null,
-                              strokeWidth: 2,
-                              color: AppColors.primary.withOpacity(0.5),
-                            ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            width: 80,
-                            height: 80,
-                            color: Colors.grey[200],
-                            child: const Icon(
-                              Icons.person_rounded,
-                              size: 40,
-                              color: Colors.grey,
-                            ),
-                          );
-                        },
+                        color: Colors.grey[200],
+                        child: const Icon(
+                          Icons.person,
+                          size: 48,
+                          color: Colors.grey,
+                        ),
                       ),
                     ),
-                  ),
                   const SizedBox(width: 16),
 
                   // Doctor Info

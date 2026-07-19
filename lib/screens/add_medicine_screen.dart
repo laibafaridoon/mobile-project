@@ -51,11 +51,14 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
       night: _night,
       beforeFood: _beforeFood,
       notes: _notesController.text.trim(),
+      startDate: DateTime.now(),
+      endDate: DateTime.now().add(const Duration(days: 7)),
     );
-    Provider.of<MedicineProvider>(
-      context,
-      listen: false,
-    ).addMedicine(newMedicine);
+    Provider.of<MedicineProvider>(context, listen: false).addMedicine(
+      newMedicine,
+      startDate: newMedicine.startDate,
+      endDate: newMedicine.endDate,
+    );
     Navigator.pop(context);
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -125,28 +128,30 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              // YAHAN BADLAV KIYA HAI: Row ki jagah Wrap use kiya hai
+              Wrap(
+                spacing: 8.0,
+                runSpacing: 8.0,
                 children: [
                   _buildScheduleChip(
                     'Morning',
                     _morning,
-                    (val) => setState(() => _morning = val),
+                        (val) => setState(() => _morning = val),
                   ),
                   _buildScheduleChip(
                     'Afternoon',
                     _afternoon,
-                    (val) => setState(() => _afternoon = val),
+                        (val) => setState(() => _afternoon = val),
                   ),
                   _buildScheduleChip(
                     'Evening',
                     _evening,
-                    (val) => setState(() => _evening = val),
+                        (val) => setState(() => _evening = val),
                   ),
                   _buildScheduleChip(
                     'Night',
                     _night,
-                    (val) => setState(() => _night = val),
+                        (val) => setState(() => _night = val),
                   ),
                 ],
               ),
@@ -232,10 +237,10 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
   }
 
   Widget _buildScheduleChip(
-    String label,
-    bool isSelected,
-    Function(bool) onSelected,
-  ) {
+      String label,
+      bool isSelected,
+      Function(bool) onSelected,
+      ) {
     return ChoiceChip(
       label: Text(label),
       selected: isSelected,

@@ -65,9 +65,29 @@ class HomeDashboardScreen extends StatelessWidget {
                                 Navigator.pushNamed(context, AppRoutes.profile),
                             child: CircleAvatar(
                               radius: 26,
-                              backgroundImage: NetworkImage(
-                                authProvider.user?.profilePictureUrl ?? '',
-                              ),
+                              backgroundColor: AppColors.primaryLight,
+                              backgroundImage:
+                                  authProvider
+                                          .user
+                                          ?.profilePictureUrl
+                                          .isNotEmpty ==
+                                      true
+                                  ? NetworkImage(
+                                      authProvider.user!.profilePictureUrl,
+                                    )
+                                  : null,
+                              child:
+                                  authProvider
+                                          .user
+                                          ?.profilePictureUrl
+                                          .isEmpty ==
+                                      true
+                                  ? Icon(
+                                      Icons.person,
+                                      color: AppColors.primary,
+                                      size: 28,
+                                    )
+                                  : null,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -660,13 +680,13 @@ class HomeDashboardScreen extends StatelessWidget {
             padding: const EdgeInsets.all(12.0),
             child: Row(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    appointment.doctorImageUrl,
-                    height: 56,
-                    width: 56,
-                    fit: BoxFit.cover,
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor: AppColors.primaryLight,
+                  child: const Icon(
+                    Icons.person_rounded,
+                    color: AppColors.primary,
+                    size: 28,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -758,8 +778,4 @@ class HomeDashboardScreen extends StatelessWidget {
       ),
     );
   }
-}
-
-extension on IconData {
-  // Placeholder icon for pill
 }

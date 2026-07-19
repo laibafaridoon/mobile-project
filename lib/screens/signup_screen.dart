@@ -18,9 +18,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _ageController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  final _qualificationController = TextEditingController();
+  final _experienceController = TextEditingController();
+  final _feeController = TextEditingController();
+  final _hospitalController = TextEditingController();
+
   String _selectedGender = 'Male';
   String _selectedBloodGroup = 'O+';
+  String _selectedRole = 'patient';
+  String _selectedSpecialization = 'General Medicine';
   bool _obscurePassword = true;
+
   final List<String> _genders = ['Male', 'Female', 'Other'];
   final List<String> _bloodGroups = [
     'A+',
@@ -32,12 +40,24 @@ class _SignUpScreenState extends State<SignUpScreen> {
     'AB+',
     'AB-',
   ];
+  final List<String> _roles = ['patient', 'doctor'];
+  final List<String> _specializations = [
+    'General Medicine',
+    'Cardiology',
+    'Pediatrics',
+    'Dermatology',
+    'Neurology',
+  ];
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
     _ageController.dispose();
     _passwordController.dispose();
+    _qualificationController.dispose();
+    _experienceController.dispose();
+    _feeController.dispose();
+    _hospitalController.dispose();
     super.dispose();
   }
 
@@ -45,6 +65,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (!_formKey.currentState!.validate()) return;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final age = int.tryParse(_ageController.text.trim()) ?? 0;
+    
+    Map<String, dynamic>? docDetails;
+    if (_selectedRole == 'doctor') {
+      docDetails = {
+        'qualification': _qualificationController.text.trim(),
+        'specialization': _selectedSpecialization,
+        'experience': int.tryParse(_experienceController.text.trim()) ?? 5,
+        'consultationFee': double.tryParse(_feeController.text.trim()) ?? 50.0,
+        'hospitalName': _hospitalController.text.trim().isNotEmpty
+            ? _hospitalController.text.trim()
+            : 'City General Hospital',
+      };
+    }
+
     final success = await authProvider.register(
       name: _nameController.text.trim(),
       email: _emailController.text.trim(),
@@ -52,14 +86,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
       age: age,
       gender: _selectedGender,
       bloodGroup: _selectedBloodGroup,
+      role: _selectedRole,
+      doctorDetails: docDetails,
     );
     if (!mounted) return;
     if (success) {
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        AppRoutes.home,
-        (route) => false,
-      );
+      if (_selectedRole == 'patient') {
+          // After patient registration, show login screen
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            AppRoutes.login,
+            (route) => false,
+          );
+        } else if (_selectedRole == 'doctor') {
+          // After doctor registration, show awaiting approval screen
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            AppRoutes.awaitApproval,
+            (route) => false,
+          );
+        }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -99,6 +145,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
+                // Role Selector
+                DropdownButtonFormField<String>(
+                  value: _selectedRole,
+                  decoration: const InputDecoration(
+                    labelText: 'Register As',
+                    prefixIcon: Icon(
+                      Icons.assignment_ind_outlined,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  items: _roles.map((role) {
+                    return DropdownMenuItem(
+                      value: role,
+                      child: Text(role == 'patient' ? 'Patient' : 'Doctor'),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) setState(() => _selectedRole = val);
+                  },
+                ),
+                const SizedBox(height: 16),
                 // Name
                 TextFormField(
                   controller: _nameController,
@@ -204,6 +271,77 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
+                if (_selectedRole == 'doctor') ...[
+                  const Text(
+                    'Doctor Professional Details',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary),
+                  ),
+                  const SizedBox(height: 12),
+                  // Specialty
+                  DropdownButtonFormField<String>(
+                    value: _selectedSpecialization,
+                    decoration: const InputDecoration(
+                      labelText: 'Specialization',
+                      prefixIcon: Icon(Icons.star_outline, color: AppColors.primary),
+                    ),
+                    items: _specializations.map((s) {
+                      return DropdownMenuItem(value: s, child: Text(s));
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) setState(() => _selectedSpecialization = val);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  // Qualification
+                  TextFormField(
+                    controller: _qualificationController,
+                    decoration: const InputDecoration(
+                      labelText: 'Qualification (e.g. MBBS, MD)',
+                      prefixIcon: Icon(Icons.school_outlined, color: AppColors.primary),
+                    ),
+                    validator: (v) => _selectedRole == 'doctor' && (v == null || v.isEmpty) ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  // Experience and Fee Row
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _experienceController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Experience (Years)',
+                            prefixIcon: Icon(Icons.work_history_outlined, color: AppColors.primary),
+                          ),
+                          validator: (v) => _selectedRole == 'doctor' && (v == null || v.isEmpty) ? 'Required' : null,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _feeController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Consultation Fee (\$)',
+                            prefixIcon: Icon(Icons.attach_money, color: AppColors.primary),
+                          ),
+                          validator: (v) => _selectedRole == 'doctor' && (v == null || v.isEmpty) ? 'Required' : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Hospital Name
+                  TextFormField(
+                    controller: _hospitalController,
+                    decoration: const InputDecoration(
+                      labelText: 'Hospital/Clinic Name',
+                      prefixIcon: Icon(Icons.local_hospital_outlined, color: AppColors.primary),
+                    ),
+                    validator: (v) => _selectedRole == 'doctor' && (v == null || v.isEmpty) ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 // Password
                 TextFormField(
                   controller: _passwordController,

@@ -241,13 +241,17 @@ class _ManageDoctorsScreenState extends State<ManageDoctorsScreen> {
                       horizontal: 16,
                       vertical: 8,
                     ),
-                    leading: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.network(
-                        doc.imageUrl,
-                        width: 50,
-                        height: 50,
-                        fit: BoxFit.cover,
+                    leading: Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.person,
+                        size: 32,
+                        color: Colors.grey,
                       ),
                     ),
                     title: Text(

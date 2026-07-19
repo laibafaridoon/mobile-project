@@ -29,14 +29,14 @@ class AppointmentBookingScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        doctor.imageUrl,
-                        width: 72,
-                        height: 72,
-                        fit: BoxFit.cover,
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      child: const Icon(Icons.person, size: 48, color: AppColors.textSecondary),
                     ),
                     const SizedBox(width: 16),
                     Expanded(

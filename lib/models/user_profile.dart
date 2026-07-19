@@ -9,6 +9,8 @@ class UserProfile {
   final String emergencyContact;
   final String address;
   final String profilePictureUrl;
+  final String role; // 'patient', 'doctor', 'admin'
+
   UserProfile({
     required this.uid,
     required this.name,
@@ -20,7 +22,9 @@ class UserProfile {
     required this.emergencyContact,
     required this.address,
     required this.profilePictureUrl,
+    this.role = 'patient',
   });
+
   UserProfile copyWith({
     String? uid,
     String? name,
@@ -32,6 +36,7 @@ class UserProfile {
     String? emergencyContact,
     String? address,
     String? profilePictureUrl,
+    String? role,
   }) {
     return UserProfile(
       uid: uid ?? this.uid,
@@ -44,6 +49,7 @@ class UserProfile {
       emergencyContact: emergencyContact ?? this.emergencyContact,
       address: address ?? this.address,
       profilePictureUrl: profilePictureUrl ?? this.profilePictureUrl,
+      role: role ?? this.role,
     );
   }
 
@@ -59,10 +65,13 @@ class UserProfile {
       emergencyContact: map['emergencyContact'] ?? '',
       address: map['address'] ?? '',
       profilePictureUrl: map['profilePictureUrl'] ?? '',
+      role: map['role'] ?? 'patient',
     );
   }
+
   Map<String, dynamic> toMap() {
     return {
+      'uid': uid,
       'name': name,
       'email': email,
       'age': age,
@@ -72,6 +81,8 @@ class UserProfile {
       'emergencyContact': emergencyContact,
       'address': address,
       'profilePictureUrl': profilePictureUrl,
+      'role': role,
+      'updatedAt': DateTime.now().toIso8601String(),
     };
   }
 }

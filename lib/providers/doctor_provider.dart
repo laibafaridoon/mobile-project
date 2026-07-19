@@ -4,60 +4,77 @@ import '../services/doctor_service.dart';
 
 class DoctorProvider with ChangeNotifier {
   final DoctorService _doctorService = DoctorService();
-  List<Doctor> _doctors = [];
-  List<Doctor> _filteredDoctors = [];
+  
+  List<Doctor> _allDoctors = [];
+  List<Doctor> _searchResults = [];
   bool _isLoading = false;
-  String _selectedSpecialization = 'All';
-  String _searchQuery = '';
-  Doctor? _selectedDoctor;
-  List<Doctor> get doctors => _doctors;
-  List<Doctor> get filteredDoctors => _filteredDoctors;
+  String? _error;
+  
+  List<Doctor> get allDoctors => _allDoctors;
+  List<Doctor> get searchResults => _searchResults;
   bool get isLoading => _isLoading;
-  String get selectedSpecialization => _selectedSpecialization;
-  String get searchQuery => _searchQuery;
-  Doctor? get selectedDoctor => _selectedDoctor;
-  List<String> get specializations => [
-    'All',
-    'General Medicine',
-    'Cardiology',
-    'Pediatrics',
-    'Dermatology',
-    'Neurology',
-  ];
+  String? get error => _error;
+  
   DoctorProvider() {
-    loadDoctors();
-  }
-  Future<void> loadDoctors() async {
-    _setLoading(true);
-    try {
-      _doctors = await _doctorService.getDoctors();
-      _applyFilter();
-    } finally {
-      _setLoading(false);
-    }
+    _initializeListener();
   }
 
-  void selectSpecialization(String specialization) {
-    _selectedSpecialization = specialization;
-    _applyFilter();
+  String? _selectedSpecialization;
+  String _searchQuery = '';
+
+  List<Doctor> get doctors => _allDoctors;
+
+  List<String> get specializations {
+    final specs = _allDoctors.map((doc) => doc.specialization).toSet().toList();
+    return specs;
+  }
+
+  String? get selectedSpecialization => _selectedSpecialization;
+
+  List<Doctor> get filteredDoctors {
+    List<Doctor> list = _allDoctors;
+    if (_selectedSpecialization != null && _selectedSpecialization!.isNotEmpty) {
+      list = list.where((doc) => doc.specialization.toLowerCase() == _selectedSpecialization!.toLowerCase()).toList();
+    }
+    if (_searchQuery.isNotEmpty) {
+      list = list.where((doc) =>
+          doc.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          doc.specialization.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+    }
+    return list;
+  }
+
+  void selectSpecialization(dynamic spec) {
+    _selectedSpecialization = spec as String?;
+    notifyListeners();
   }
 
   void setSearchQuery(String query) {
     _searchQuery = query;
-    _applyFilter();
-  }
-
-  void selectDoctor(Doctor doctor) {
-    _selectedDoctor = doctor;
     notifyListeners();
   }
 
   Future<void> addDoctor(Doctor doctor) async {
     _setLoading(true);
     try {
-      final added = await _doctorService.addDoctor(doctor);
-      _doctors.add(added);
-      _applyFilter();
+      await DoctorService.addDoctor(
+        doctor,
+        name: doctor.name,
+        qualification: doctor.qualification,
+        specialization: doctor.specialization,
+        experience: doctor.experience,
+        hospitalName: doctor.hospitalName,
+        consultationFee: doctor.consultationFee,
+        availableDays: doctor.availableDays,
+        availableTimeSlots: doctor.availableTimeSlots,
+        contactInfo: doctor.contactInfo,
+        imageUrl: doctor.imageUrl.isNotEmpty
+            ? doctor.imageUrl
+            : 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=300',
+      );
+      _error = null;
+    } catch (e) {
+      _error = e.toString();
     } finally {
       _setLoading(false);
     }
@@ -66,12 +83,10 @@ class DoctorProvider with ChangeNotifier {
   Future<void> editDoctor(Doctor doctor) async {
     _setLoading(true);
     try {
-      final edited = await _doctorService.editDoctor(doctor);
-      final index = _doctors.indexWhere((doc) => doc.id == doctor.id);
-      if (index != -1) {
-        _doctors[index] = edited;
-      }
-      _applyFilter();
+      await _doctorService.editDoctor(doctor);
+      _error = null;
+    } catch (e) {
+      _error = e.toString();
     } finally {
       _setLoading(false);
     }
@@ -80,33 +95,60 @@ class DoctorProvider with ChangeNotifier {
   Future<void> deleteDoctor(String id) async {
     _setLoading(true);
     try {
-      await _doctorService.deleteDoctor(id);
-      _doctors.removeWhere((doc) => doc.id == id);
-      _applyFilter();
+      await DoctorService.deleteDoctor(id);
+      _error = null;
+    } catch (e) {
+      _error = e.toString();
     } finally {
       _setLoading(false);
     }
   }
 
-  void _applyFilter() {
-    _filteredDoctors = _doctors.where((doc) {
-      final matchSpec =
-          _selectedSpecialization == 'All' ||
-          doc.specialization == _selectedSpecialization;
-      final matchSearch =
-          _searchQuery.isEmpty ||
-          doc.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          doc.specialization.toLowerCase().contains(
-            _searchQuery.toLowerCase(),
-          ) ||
-          doc.hospitalName.toLowerCase().contains(_searchQuery.toLowerCase());
-      return matchSpec && matchSearch;
-    }).toList();
-    notifyListeners();
+  void _initializeListener() {
+    DoctorService.listenToDoctors().listen(
+      (doctors) {
+        _allDoctors = doctors;
+        _searchResults = doctors;
+        _error = null;
+        notifyListeners();
+      },
+      onError: (e) {
+        _error = e.toString();
+        notifyListeners();
+      },
+    );
   }
 
   void _setLoading(bool val) {
     _isLoading = val;
     notifyListeners();
+  }
+
+  void searchDoctors(String query) {
+    _searchQuery = query;
+    if (query.isEmpty) {
+      _searchResults = _allDoctors;
+    } else {
+      _searchResults = _allDoctors
+          .where((doc) =>
+              doc.name.toLowerCase().contains(query.toLowerCase()) ||
+              doc.specialization.toLowerCase().contains(query.toLowerCase()))
+          .toList();
+    }
+    notifyListeners();
+  }
+
+  Future<bool> rateDoctor(String doctorId, double rating) async {
+    _setLoading(true);
+    try {
+      await _doctorService.rateDoctor(doctorId, rating);
+      _error = null;
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
+      _setLoading(false);
+    }
   }
 }

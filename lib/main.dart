@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 // Import Services & Providers
+import 'services/firebase_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/doctor_provider.dart';
 import 'providers/appointment_provider.dart';
 import 'providers/queue_provider.dart';
 import 'providers/medicine_provider.dart';
 import 'providers/notification_provider.dart';
+import 'providers/chat_provider.dart';
 import 'providers/theme_provider.dart'; // ← Ensure this file exists in providers
+import 'providers/payment_provider.dart';
 
 // Import Constants & Routes
 import 'constants/theme.dart';
@@ -17,8 +20,13 @@ import 'routes/app_routes.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // TODO: Initialize FirebaseService when implemented.
-  // await FirebaseService.initializeApp();
+  // Initialize Firebase
+  try {
+    await FirebaseService.initialize();
+    print('[Main] Firebase initialized successfully');
+  } catch (e) {
+    print('[Main] Firebase initialization error (using demo mode): $e');
+  }
 
   runApp(const SmartHospitalApp());
 }
@@ -36,14 +44,12 @@ class SmartHospitalApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => QueueProvider()),
         ChangeNotifierProvider(create: (_) => MedicineProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
-        ChangeNotifierProvider(
-          create: (_) => ThemeProvider(),
-        ), // Provider registered here
+        ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => PaymentProvider()),
       ],
-      // Builder widget lagaya hai taake context se ThemeProvider access ho sake
       child: Builder(
         builder: (context) {
-          // ThemeProvider ko listen kar rahe hain taake UI update ho sake
           final themeProvider = Provider.of<ThemeProvider>(context);
 
           return MaterialApp(
