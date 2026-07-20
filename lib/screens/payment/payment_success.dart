@@ -50,7 +50,7 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Spacer(),
-              // Checkmark animation
+              // Success Animation Icon
               ScaleTransition(
                 scale: _scaleAnimation,
                 child: Container(
@@ -69,7 +69,6 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
               ),
               const SizedBox(height: 32),
 
-              // Success Headers
               Text(
                 'Payment Successful!',
                 style: textTheme.headlineSmall?.copyWith(
@@ -89,7 +88,7 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
               ),
               const SizedBox(height: 40),
 
-              // Receipt/Confirmation Card
+              // Receipt Card
               Card(
                 elevation: 0,
                 color: AppColors.background,
@@ -123,10 +122,10 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
               ),
               const Spacer(),
 
-              // Quick Actions
+              // Primary Action: View Token
               ElevatedButton(
                 onPressed: () {
-                  // Direct to token details
+                  // Direct to token details safely
                   Navigator.pushReplacementNamed(
                     context,
                     AppRoutes.tokenDetail,
@@ -147,10 +146,16 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
                 ),
               ),
               const SizedBox(height: 12),
+
+              // Secondary Action: Return to Home (CRASH FIX APPLIED)
               TextButton(
                 onPressed: () {
-                  // Back to home dashboard
-                  Navigator.popUntil(context, ModalRoute.withName(AppRoutes.home));
+                  // SAFEST WAY: Clear navigation stack and go to Home
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    AppRoutes.home,
+                        (route) => false,
+                  );
                 },
                 style: TextButton.styleFrom(
                   minimumSize: const Size.fromHeight(56),

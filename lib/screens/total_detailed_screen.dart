@@ -48,7 +48,6 @@ class TokenDetailScreen extends StatelessWidget {
                           children: [
                             ClipRRect(
                               borderRadius: BorderRadius.circular(12),
-                              // FIX: Extra safety check for URL
                               child: _buildSafeImage(appointment.doctorImageUrl),
                             ),
                             const SizedBox(width: 12),
@@ -95,7 +94,6 @@ class TokenDetailScreen extends StatelessWidget {
                       const SizedBox(height: 8),
                       const Text('Scan at Room entrance to check in', style: TextStyle(fontSize: 10, color: AppColors.textLight)),
                       const SizedBox(height: 20),
-                      // FIX: Flexible added to prevent stats overflow
                       Container(
                         color: AppColors.primaryLight.withOpacity(0.2),
                         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
@@ -136,33 +134,19 @@ class TokenDetailScreen extends StatelessWidget {
     );
   }
 
-  // Safe Image Builder
   Widget _buildSafeImage(String url) {
     bool isValidUrl = url.isNotEmpty && url.startsWith('http') && Uri.tryParse(url)?.hasAbsolutePath == true;
-
     if (!isValidUrl) return _buildPlaceholderIcon();
-
-    return Image.network(
-      url,
-      width: 60,
-      height: 60,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) => _buildPlaceholderIcon(),
-    );
+    return Image.network(url, width: 60, height: 60, fit: BoxFit.cover, errorBuilder: (c, e, s) => _buildPlaceholderIcon());
   }
 
-  Widget _buildPlaceholderIcon() {
-    return Container(width: 60, height: 60, color: AppColors.background, child: const Icon(Icons.person, color: AppColors.primary));
-  }
+  Widget _buildPlaceholderIcon() => Container(width: 60, height: 60, color: AppColors.background, child: const Icon(Icons.person, color: AppColors.primary));
 
   Widget _buildTicketStat(String label, String value) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.textSecondary, fontSize: 10)),
-        Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.textPrimary)),
-      ],
-    );
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.textSecondary, fontSize: 10)),
+      Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.textPrimary)),
+    ]);
   }
 
   Widget _buildMockQRCode() {
@@ -178,19 +162,19 @@ class TokenDetailScreen extends StatelessWidget {
   }
 
   void _showCancelDialog(BuildContext context, AppointmentProvider provider, String appointmentId) {
+    double refundAmount = (appointment.amountPaid ?? 0) * 0.90;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Cancel Appointment'),
-        content: const Text('Are you sure you want to cancel this appointment?'),
+        title: const Text('Cancel & Refund?'),
+        content: Text('Are you sure? 10% will be deducted. You will get PKR ${refundAmount.toStringAsFixed(2)} back.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('No, Keep It')),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('No')),
           TextButton(
             onPressed: () {
               provider.cancelAppointment(appointmentId);
               Navigator.pop(context);
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cancelled successfully'), backgroundColor: AppColors.error));
             },
             child: const Text('Yes, Cancel', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
           ),

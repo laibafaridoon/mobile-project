@@ -34,7 +34,7 @@ import 'package:smart_hospital/screens/splash_screen.dart';
 import 'package:smart_hospital/screens/time_slot_selection_screen.dart';
 import 'package:smart_hospital/screens/total_detailed_screen.dart';
 import 'package:smart_hospital/screens/await_approval_screen.dart';
-import 'package:smart_hospital/screens/ai_assistant_screen.dart'; // Import added
+import 'package:smart_hospital/screens/ai_assistant_screen.dart';
 import '../models/appointment.dart';
 import '../models/doctor.dart';
 import '../models/medicine.dart';
@@ -76,7 +76,7 @@ class AppRoutes {
   static const String doctorProfile = '/doctor-profile';
   static const String adminDashboard = '/admin-dashboard';
   static const String managePatients = '/manage-patients';
-  static const String aiAssistant = '/ai-assistant'; // Name added
+  static const String aiAssistant = '/ai-assistant';
 
   static const String payment = '/payment';
   static const String paymentSuccess = '/payment-success';
@@ -86,71 +86,65 @@ class AppRoutes {
     WidgetBuilder errorBuilder(String message) {
       return (_) => Scaffold(
         appBar: AppBar(title: const Text('Route Error')),
-        body: Center(
-          child: Text(
-            message,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16),
-          ),
-        ),
+        body: Center(child: Text(message, textAlign: TextAlign.center)),
       );
     }
 
     switch (settings.name) {
-      case splash: return _fadeRoute(const SplashScreen());
-      case onboarding1: return _slideRoute(const Onboarding1Screen(), AxisDirection.left);
-      case onboarding2: return _slideRoute(const Onboarding2Screen(), AxisDirection.left);
-      case login: return _fadeRoute(const LoginScreen());
-      case signup: return _slideRoute(const SignUpScreen(), AxisDirection.up);
-      case forgotPassword: return _slideRoute(const ForgotPasswordScreen(), AxisDirection.left);
-      case home: return _fadeRoute(const HomeDashboardScreen());
-      case doctorList: return _slideRoute(const DoctorListScreen(), AxisDirection.left);
+      case splash: return _fadeRoute(const SplashScreen(), settings);
+      case onboarding1: return _slideRoute(const Onboarding1Screen(), AxisDirection.left, settings);
+      case onboarding2: return _slideRoute(const Onboarding2Screen(), AxisDirection.left, settings);
+      case login: return _fadeRoute(const LoginScreen(), settings);
+      case signup: return _slideRoute(const SignUpScreen(), AxisDirection.up, settings);
+      case forgotPassword: return _slideRoute(const ForgotPasswordScreen(), AxisDirection.left, settings);
+      case home: return _fadeRoute(const HomeDashboardScreen(), settings);
+      case doctorList: return _slideRoute(const DoctorListScreen(), AxisDirection.left, settings);
       case doctorDetail:
         if (settings.arguments is Doctor) {
-          return _slideRoute(DoctorDetailScreen(doctor: settings.arguments as Doctor), AxisDirection.left);
+          return _slideRoute(DoctorDetailScreen(doctor: settings.arguments as Doctor), AxisDirection.left, settings);
         }
         return MaterialPageRoute(builder: errorBuilder('Doctor details missing.'));
-      case searchDoctor: return _fadeRoute(const SearchDoctorScreen());
+      case searchDoctor: return _fadeRoute(const SearchDoctorScreen(), settings);
       case appointmentBooking:
         if (settings.arguments is Doctor) {
-          return _slideRoute(AppointmentBookingScreen(doctor: settings.arguments as Doctor), AxisDirection.up);
+          return _slideRoute(AppointmentBookingScreen(doctor: settings.arguments as Doctor), AxisDirection.up, settings);
         }
         return MaterialPageRoute(builder: errorBuilder('Doctor details missing.'));
-      case dateSelection: return _slideRoute(const DateSelectionScreen(), AxisDirection.left);
-      case timeSlotSelection: return _slideRoute(const TimeSlotSelectionScreen(), AxisDirection.left);
-      case appointmentConfirmation: return _slideRoute(const AppointmentConfirmationScreen(), AxisDirection.left);
+      case dateSelection: return _slideRoute(const DateSelectionScreen(), AxisDirection.left, settings);
+      case timeSlotSelection: return _slideRoute(const TimeSlotSelectionScreen(), AxisDirection.left, settings);
+      case appointmentConfirmation: return _slideRoute(const AppointmentConfirmationScreen(), AxisDirection.left, settings);
       case appointmentSuccess:
         if (settings.arguments is Appointment) {
-          return _fadeRoute(AppointmentSuccessScreen(appointment: settings.arguments as Appointment));
+          return _fadeRoute(AppointmentSuccessScreen(appointment: settings.arguments as Appointment), settings);
         }
         return MaterialPageRoute(builder: errorBuilder('Appointment data missing.'));
-      case payment: return _slideRoute(const PaymentScreen(), AxisDirection.left);
+      case payment: return _slideRoute(const PaymentScreen(), AxisDirection.left, settings);
       case paymentSuccess:
         if (settings.arguments is Appointment) {
-          return _fadeRoute(PaymentSuccessScreen(appointment: settings.arguments as Appointment));
+          return _fadeRoute(PaymentSuccessScreen(appointment: settings.arguments as Appointment), settings);
         }
         return MaterialPageRoute(builder: errorBuilder('Payment details missing.'));
-      case paymentFailed: return _slideRoute(PaymentFailedScreen(errorMessage: settings.arguments as String?), AxisDirection.left);
-      case appointmentHistory: return _slideRoute(const AppointmentHistoryScreen(), AxisDirection.left);
+      case paymentFailed: return _slideRoute(PaymentFailedScreen(errorMessage: settings.arguments as String?), AxisDirection.left, settings);
+      case appointmentHistory: return _slideRoute(const AppointmentHistoryScreen(), AxisDirection.left, settings);
       case liveQueue:
         if (settings.arguments is String) {
-          return _slideRoute(LiveQueueScreen(appointmentId: settings.arguments as String), AxisDirection.left);
+          return _slideRoute(LiveQueueScreen(appointmentId: settings.arguments as String), AxisDirection.left, settings);
         }
         return MaterialPageRoute(builder: errorBuilder('Appointment ID missing.'));
       case tokenDetail:
         if (settings.arguments is Appointment) {
-          return _slideRoute(TokenDetailScreen(appointment: settings.arguments as Appointment), AxisDirection.left);
+          return _slideRoute(TokenDetailScreen(appointment: settings.arguments as Appointment), AxisDirection.left, settings);
         }
         return MaterialPageRoute(builder: errorBuilder('Appointment details missing.'));
-      case queueHistory: return _slideRoute(const QueueHistoryScreen(), AxisDirection.left);
-      case medicineReminder: return _slideRoute(const MedicineReminderScreen(), AxisDirection.left);
-      case addMedicine: return _slideRoute(const AddMedicineScreen(), AxisDirection.up);
+      case queueHistory: return _slideRoute(const QueueHistoryScreen(), AxisDirection.left, settings);
+      case medicineReminder: return _slideRoute(const MedicineReminderScreen(), AxisDirection.left, settings);
+      case addMedicine: return _slideRoute(const AddMedicineScreen(), AxisDirection.up, settings);
       case editMedicine:
         if (settings.arguments is Medicine) {
-          return _slideRoute(EditMedicineScreen(medicine: settings.arguments as Medicine), AxisDirection.up);
+          return _slideRoute(EditMedicineScreen(medicine: settings.arguments as Medicine), AxisDirection.up, settings);
         }
         return MaterialPageRoute(builder: errorBuilder('Medicine details missing.'));
-      case notifications: return _slideRoute(const NotificationScreen(), AxisDirection.down);
+      case notifications: return _slideRoute(const NotificationScreen(), AxisDirection.down, settings);
       case profile:
         return _slideRoute(
           Builder(builder: (context) {
@@ -159,32 +153,34 @@ class AppRoutes {
             return const ProfileScreen();
           }),
           AxisDirection.right,
+          settings,
         );
-      case AppRoutes.settings: return _slideRoute(const SettingsScreen(), AxisDirection.left);
-      case manageDoctorRequests: return _slideRoute(const ManageDoctorRequestsScreen(), AxisDirection.left);
-      case manageDoctors: return _slideRoute(const ManageDoctorsScreen(), AxisDirection.left);
-      case manageQueue: return _slideRoute(const ManageQueueScreen(), AxisDirection.left);
-      case doctorDashboard: return _fadeRoute(const DoctorDashboardScreen());
-      case awaitApproval: return _fadeRoute(const AwaitApprovalScreen());
-      case doctorProfile: return _fadeRoute(const DoctorProfileScreen());
-      case adminDashboard: return _fadeRoute(const AdminDashboardScreen());
-      case managePatients: return _slideRoute(const ManagePatientsScreen(), AxisDirection.left);
-      case aiAssistant: return _fadeRoute(const AiAssistantScreen()); // Case added
+      case AppRoutes.settings: return _slideRoute(const SettingsScreen(), AxisDirection.left, settings);
+      case manageDoctorRequests: return _slideRoute(const ManageDoctorRequestsScreen(), AxisDirection.left, settings);
+      case manageDoctors: return _slideRoute(const ManageDoctorsScreen(), AxisDirection.left, settings);
+      case manageQueue: return _slideRoute(const ManageQueueScreen(), AxisDirection.left, settings);
+      case doctorDashboard: return _fadeRoute(const DoctorDashboardScreen(), settings);
+      case awaitApproval: return _fadeRoute(const AwaitApprovalScreen(), settings);
+      case doctorProfile: return _fadeRoute(const DoctorProfileScreen(), settings);
+      case adminDashboard: return _fadeRoute(const AdminDashboardScreen(), settings);
+      case managePatients: return _slideRoute(const ManagePatientsScreen(), AxisDirection.left, settings);
+      case aiAssistant: return _fadeRoute(const AiAssistantScreen(), settings);
       default: return MaterialPageRoute(builder: (_) => Scaffold(body: Center(child: Text('No route defined for ${settings.name}'))));
     }
   }
 
-  // Animation methods remain same...
-  static PageRouteBuilder _fadeRoute(Widget child) {
+  static PageRouteBuilder _fadeRoute(Widget child, RouteSettings settings) {
     return PageRouteBuilder(
+      settings: settings,
       pageBuilder: (context, animation, secondaryAnimation) => child,
       transitionsBuilder: (context, animation, secondaryAnimation, child) => FadeTransition(opacity: animation, child: child),
       transitionDuration: const Duration(milliseconds: 300),
     );
   }
 
-  static PageRouteBuilder _slideRoute(Widget child, AxisDirection direction) {
+  static PageRouteBuilder _slideRoute(Widget child, AxisDirection direction, RouteSettings settings) {
     return PageRouteBuilder(
+      settings: settings,
       pageBuilder: (context, animation, secondaryAnimation) => child,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         Offset begin;

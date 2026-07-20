@@ -14,15 +14,13 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _adminEmailController = TextEditingController();
-  final _adminPasswordController = TextEditingController();
   bool _obscurePassword = true;
+  String _selectedRole = 'patient'; // 'patient', 'doctor', 'admin'
+
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _adminEmailController.dispose();
-    _adminPasswordController.dispose();
     super.dispose();
   }
 
@@ -31,388 +29,221 @@ class _LoginScreenState extends State<LoginScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final email = _emailController.text.trim();
     final password = _passwordController.text;
+
     final success = await authProvider.login(email, password);
     if (!mounted) return;
+
     if (success) {
-      final role = authProvider.user?.role ?? 'patient';
+      final actualRole = authProvider.user?.role ?? 'patient';
+
+      // Role validation
+      if (_selectedRole == 'admin' && !authProvider.isAdmin) {
+        _showError('This account does not have Admin access.');
+        return;
+      }
+      if (_selectedRole == 'doctor' && actualRole != 'doctor') {
+        _showError('This account is not a Doctor account.');
+        return;
+      }
+      if (_selectedRole == 'patient' && actualRole != 'patient') {
+        _showError('This account is not a Patient account.');
+        return;
+      }
+
       if (authProvider.isAdmin) {
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          AppRoutes.adminDashboard,
-          (route) => false,
-        );
-      } else if (role == 'doctor') {
+        Navigator.pushNamedAndRemoveUntil(context, AppRoutes.adminDashboard, (route) => false);
+      } else if (actualRole == 'doctor') {
         if (authProvider.isDoctor) {
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            AppRoutes.doctorDashboard,
-            (route) => false,
-          );
+          Navigator.pushNamedAndRemoveUntil(context, AppRoutes.doctorDashboard, (route) => false);
         } else {
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            AppRoutes.awaitApproval,
-            (route) => false,
-          );
+          Navigator.pushNamedAndRemoveUntil(context, AppRoutes.awaitApproval, (route) => false);
         }
       } else {
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          AppRoutes.home,
-          (route) => false,
-        );
+        Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Login failed. Please check credentials.'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      _showError(authProvider.errorMessage ?? 'Login failed. Please check credentials.');
     }
   }
 
-  void _showAdminLoginDialog() {
-    _adminEmailController.clear();
-    _adminPasswordController.clear();
-    final dialogFormKey = GlobalKey<FormState>();
-    bool obscureAdminPassword = true;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            final authProvider = Provider.of<AuthProvider>(context);
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              title: const Row(
-                children: [
-                  Icon(Icons.admin_panel_settings, color: AppColors.primary),
-                  SizedBox(width: 8),
-                  Text('Admin Login'),
-                ],
-              ),
-              content: Form(
-                key: dialogFormKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextFormField(
-                      controller: _adminEmailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        labelText: 'Admin Email',
-                        prefixIcon: Icon(Icons.email_outlined),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter admin email';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _adminPasswordController,
-                      obscureText: obscureAdminPassword,
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            obscureAdminPassword
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                          ),
-                          onPressed: () {
-                            setStateDialog(() {
-                              obscureAdminPassword = !obscureAdminPassword;
-                            });
-                          },
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter password';
-                        }
-                        return null;
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: authProvider.isLoading
-                      ? null
-                      : () {
-                          Navigator.pop(context);
-                        },
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: authProvider.isLoading
-                      ? null
-                      : () async {
-                          if (dialogFormKey.currentState!.validate()) {
-                            final email = _adminEmailController.text.trim();
-                            final password = _adminPasswordController.text;
-                            final success = await authProvider.login(email, password);
-                            if (!mounted) return;
-                            if (success) {
-                              Navigator.pop(context); // Close dialog
-                              if (authProvider.isAdmin) {
-                                Navigator.pushNamedAndRemoveUntil(
-                                  context,
-                                  AppRoutes.adminDashboard,
-                                  (route) => false,
-                                );
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Login successful, but you are not an Admin.'),
-                                    backgroundColor: AppColors.error,
-                                  ),
-                                );
-                              }
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(authProvider.errorMessage ?? 'Admin login failed.'),
-                                  backgroundColor: AppColors.error,
-                                ),
-                              );
-                            }
-                          }
-                        },
-                  child: authProvider.isLoading
-                      ? const SizedBox(
-                          height: 16,
-                          width: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text('Login'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: AppColors.error),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
     final authProvider = Provider.of<AuthProvider>(context);
-    return Scaffold(
-      body: SingleChildScrollView(
-        child: Container(
-          height: size.height,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [AppColors.primaryLight, Colors.white],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Header Logo & Title
-                    Center(
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.local_hospital_rounded,
-                          size: 54,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Welcome Back',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                        fontSize: 28,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Login to track your queues & appointments',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-                    // Email Field
-                    TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        labelText: 'Email Address',
-                        prefixIcon: Icon(
-                          Icons.email_outlined,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter email';
-                        }
-                        if (!value.contains('@')) {
-                          return 'Enter a valid email address';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    // Password Field
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: _obscurePassword,
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: const Icon(
-                          Icons.lock_outline,
-                          color: AppColors.primary,
-                        ),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                            color: AppColors.textSecondary,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter password';
-                        }
-                        if (value.length < 6) {
-                          return 'Password must be at least 6 characters';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    // Admin login option (compact)
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: authProvider.isLoading ? null : _showAdminLoginDialog,
-                        child: const Text(
-                          'Admin Login',
-                          style: TextStyle(color: AppColors.primaryDark),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Forgot Password link
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {
-                          Navigator.pushNamed(
-                            context,
-                            AppRoutes.forgotPassword,
-                          );
-                        },
-                        child: const Text(
-                          'Forgot Password?',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    // Submit Button
-                    ElevatedButton(
-                      onPressed: authProvider.isLoading ? null : _submit,
-                      child: authProvider.isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Text('Login'),
-                    ),
-                    const SizedBox(height: 24),
-                    // Footer Link to Sign Up
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
-                          "Don't have an account?",
-                          style: TextStyle(color: AppColors.textSecondary),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pushNamed(context, AppRoutes.signup);
-                          },
-                          child: const Text(
-                            'Sign Up',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
 
-                    const SizedBox(height: 20),
-                    // Quick Demo note
-                    const Center(
-                      child: Text(
-                        'Demo Admin Credentials: admin@hospital.com\nDemo Patient: Click Sign Up or use any email',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textLight,
-                          height: 1.4,
-                        ),
-                      ),
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 40),
+                // Top Logo
+                Center(
+                  child: Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.add_box_rounded,
+                      color: AppColors.primary,
+                      size: 32,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                // Title
+                const Text(
+                  'Welcome to\nSmart Hospital',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF4A5A5C),
+                    height: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Sign in to manage appointments,\nqueue and medical records.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey, fontSize: 14, height: 1.5),
+                ),
+                const SizedBox(height: 40),
+                // Select Account Section
+                const Text(
+                  'SELECT ACCOUNT',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(child: _buildRoleCard('Patient', Icons.person_rounded, 'patient')),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildRoleCard('Doctor', Icons.medical_services_rounded, 'doctor')),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildRoleCard('Admin', Icons.security_rounded, 'admin')),
+                  ],
+                ),
+                const SizedBox(height: 32),
+                // Email
+                const Text('Email', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: _inputDecoration(Icons.email_outlined, 'Enter your email'),
+                  validator: (value) => value == null || value.isEmpty ? 'Enter email' : null,
+                ),
+                const SizedBox(height: 20),
+                // Password
+                const Text('Password', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  decoration: _inputDecoration(
+                    Icons.lock_outline_rounded,
+                    'Enter your password',
+                    suffixIcon: IconButton(
+                      icon: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined, color: Colors.grey),
+                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    ),
+                  ),
+                  validator: (value) => value == null || value.isEmpty ? 'Enter password' : null,
+                ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => Navigator.pushNamed(context, AppRoutes.forgotPassword),
+                    child: const Text('Forgot Password?', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Sign In Button
+                ElevatedButton(
+                  onPressed: authProvider.isLoading ? null : _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: authProvider.isLoading
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text('SIGN IN', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                ),
+                const SizedBox(height: 24),
+                const Row(children: [
+                  Expanded(child: Divider(color: Colors.grey, thickness: 0.5)),
+                  Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('OR', style: TextStyle(color: Colors.grey, fontSize: 12))),
+                  Expanded(child: Divider(color: Colors.grey, thickness: 0.5)),
+                ]),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text("Don't have an account? ", style: TextStyle(color: Colors.grey)),
+                    GestureDetector(
+                      onTap: () => Navigator.pushNamed(context, AppRoutes.signup),
+                      child: const Text('Create Account', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 40),
+                Text('© ${DateTime.now().year} Smart Hospital\nHealthcare Made Simple', textAlign: TextAlign.center, style: const TextStyle(color: Colors.grey, fontSize: 12, height: 1.5)),
+                const SizedBox(height: 24),
+              ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildRoleCard(String label, IconData icon, String role) {
+    bool isSelected = _selectedRole == role;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedRole = role),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : const Color(0xFFF5F7F7),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: isSelected ? [BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))] : [],
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: isSelected ? Colors.white : Colors.grey, size: 28),
+            const SizedBox(height: 8),
+            Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isSelected ? Colors.white : Colors.black87)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(IconData icon, String hint, {Widget? suffixIcon}) {
+    return InputDecoration(
+      hintText: hint,
+      prefixIcon: Icon(icon, color: AppColors.primary, size: 22),
+      suffixIcon: suffixIcon,
+      fillColor: const Color(0xFFF5F7F7),
+      filled: true,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
     );
   }
 }
