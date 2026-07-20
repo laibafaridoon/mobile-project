@@ -91,6 +91,7 @@ class AppRoutes {
     }
 
     switch (settings.name) {
+<<<<<<< HEAD
       case splash: return _fadeRoute(const SplashScreen(), settings);
       case onboarding1: return _slideRoute(const Onboarding1Screen(), AxisDirection.left, settings);
       case onboarding2: return _slideRoute(const Onboarding2Screen(), AxisDirection.left, settings);
@@ -99,6 +100,16 @@ class AppRoutes {
       case forgotPassword: return _slideRoute(const ForgotPasswordScreen(), AxisDirection.left, settings);
       case home: return _fadeRoute(const HomeDashboardScreen(), settings);
       case doctorList: return _slideRoute(const DoctorListScreen(), AxisDirection.left, settings);
+=======
+      case splash: return _fadeRoute(const SplashScreen());
+      case onboarding1: return _slideRoute(const Onboarding1Screen(), AxisDirection.left);
+      case onboarding2: return _slideRoute(const Onboarding2Screen(), AxisDirection.left);
+      case login: return _fadeRoute(const LoginScreen());
+      case signup: return _slideRoute(const SignupScreen(), AxisDirection.up);
+      case forgotPassword: return _slideRoute(const ForgotPasswordScreen(), AxisDirection.left);
+      case home: return _fadeRoute(const HomeDashboardScreen());
+      case doctorList: return _slideRoute(const DoctorListScreen(), AxisDirection.left);
+>>>>>>> 4287e5a3a34ae9ec11359ba797f11fe4c5511acf
       case doctorDetail:
         if (settings.arguments is Doctor) {
           return _slideRoute(DoctorDetailScreen(doctor: settings.arguments as Doctor), AxisDirection.left, settings);

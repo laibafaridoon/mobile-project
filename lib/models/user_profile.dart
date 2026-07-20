@@ -10,7 +10,23 @@ class UserProfile {
   final String address;
   final String profilePictureUrl;
   final String role; // 'patient', 'doctor', 'admin'
+// Doctor Information
+final String qualification;
+final String specialization;
+final int experience;
+final String hospitalName;
+final double consultationFee;
+final String pmdcNumber;
 
+// Availability
+final List<String> availableDays;
+final String startTime;
+final String endTime;
+final int appointmentDuration;
+final int maxPatientsPerDay;
+
+// Approval
+final bool isApproved;
   UserProfile({
     required this.uid,
     required this.name,
@@ -23,6 +39,20 @@ class UserProfile {
     required this.address,
     required this.profilePictureUrl,
     this.role = 'patient',
+    this.qualification = '',
+this.specialization = '',
+this.experience = 0,
+this.hospitalName = '',
+this.consultationFee = 0,
+this.pmdcNumber = '',
+
+this.availableDays = const [],
+this.startTime = '',
+this.endTime = '',
+this.appointmentDuration = 30,
+this.maxPatientsPerDay = 20,
+
+this.isApproved = false,
   });
 
   UserProfile copyWith({
@@ -37,6 +67,20 @@ class UserProfile {
     String? address,
     String? profilePictureUrl,
     String? role,
+    String? qualification,
+String? specialization,
+int? experience,
+String? hospitalName,
+double? consultationFee,
+String? pmdcNumber,
+
+List<String>? availableDays,
+String? startTime,
+String? endTime,
+int? appointmentDuration,
+int? maxPatientsPerDay,
+
+bool? isApproved,
   }) {
     return UserProfile(
       uid: uid ?? this.uid,
@@ -49,7 +93,42 @@ class UserProfile {
       emergencyContact: emergencyContact ?? this.emergencyContact,
       address: address ?? this.address,
       profilePictureUrl: profilePictureUrl ?? this.profilePictureUrl,
-      role: role ?? this.role,
+      role: role ?? this.role, qualification:
+    qualification ?? this.qualification,
+
+specialization:
+    specialization ?? this.specialization,
+
+experience:
+    experience ?? this.experience,
+
+hospitalName:
+    hospitalName ?? this.hospitalName,
+
+consultationFee:
+    consultationFee ?? this.consultationFee,
+
+pmdcNumber:
+    pmdcNumber ?? this.pmdcNumber,
+
+
+
+startTime:
+    startTime ?? this.startTime,
+
+endTime:
+    endTime ?? this.endTime,
+
+appointmentDuration:
+    appointmentDuration ??
+        this.appointmentDuration,
+
+maxPatientsPerDay:
+    maxPatientsPerDay ??
+        this.maxPatientsPerDay,
+
+isApproved:
+    isApproved ?? this.isApproved,
     );
   }
 
@@ -65,7 +144,43 @@ class UserProfile {
       emergencyContact: map['emergencyContact'] ?? '',
       address: map['address'] ?? '',
       profilePictureUrl: map['profilePictureUrl'] ?? '',
-      role: map['role'] ?? 'patient',
+      role: map['role'] ?? 'patient', qualification:
+    map['qualification'] ?? '',
+
+specialization:
+    map['specialization'] ?? '',
+
+experience:
+    map['experience'] ?? 0,
+
+hospitalName:
+    map['hospitalName'] ?? '',
+
+consultationFee:
+    (map['consultationFee'] ?? 0).toDouble(),
+
+pmdcNumber:
+    map['pmdcNumber'] ?? '',
+
+availableDays:
+    List<String>.from(
+        map['availableDays'] ?? []),
+
+startTime:
+    map['startTime'] ?? '',
+
+endTime:
+    map['endTime'] ?? '',
+
+appointmentDuration:
+    map['appointmentDuration'] ?? 30,
+
+maxPatientsPerDay:
+    map['maxPatientsPerDay'] ?? 20,
+
+isApproved:
+    map['isApproved'] ?? false,
+      
     );
   }
 
@@ -83,6 +198,29 @@ class UserProfile {
       'profilePictureUrl': profilePictureUrl,
       'role': role,
       'updatedAt': DateTime.now().toIso8601String(),
+      'qualification': qualification,
+
+'specialization': specialization,
+
+'experience': experience,
+
+'hospitalName': hospitalName,
+
+'consultationFee': consultationFee,
+
+'pmdcNumber': pmdcNumber,
+
+'availableDays': availableDays,
+
+'startTime': startTime,
+
+'endTime': endTime,
+
+'appointmentDuration': appointmentDuration,
+
+'maxPatientsPerDay': maxPatientsPerDay,
+
+'isApproved': isApproved,
     };
   }
 }
